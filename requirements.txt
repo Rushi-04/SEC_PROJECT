@@ -1,0 +1,4 @@
+selenium
+dotenv
+undetected_chromedriver
+setuptools
