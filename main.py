@@ -79,41 +79,51 @@ try:
     
     
     
-    
-    
-    
-    # Wait for the table to load
-    wait.until(EC.presence_of_element_located((By.XPATH, "//table[@class='table']//tbody/tr")))
+    # flow after table appears
+    # Wait for the filings table to load
+    print("Waiting for filings table to appear...")               
+    table = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="hits"]/table')))
+    rows = table.find_elements(By.XPATH, ".//tbody/tr")
+    print(f"Found {len(rows)} rows in the filings table.")
 
-    rows = driver.find_elements(By.XPATH, "//table[@class='table']//tbody/tr")
-    print(f"Total rows found: {len(rows)}")
+    latest_date = None
+    latest_row = None
 
-    records = []
+    # Loop through each row to find the latest 'Filed' date
     for row in rows:
-        filed_date_text = row.find_element(By.XPATH, "./td[@class='filed']").text.strip()
-        link_element = row.find_element(By.XPATH, "./td[@class='filetype']/a")
-        link_href = link_element.get_attribute("href")
-        link_text = link_element.text.strip()
-        
-        filed_date = datetime.strptime(filed_date_text, "%Y-%m-%d")
-        
-        records.append({
-            "date": filed_date,
-            "link": link_href,
-            "text": link_text,
-            "element": link_element
-        })
+        try:
+            filed_date_text = row.find_element(By.XPATH, ".//td[contains(@class,'filed')]").text.strip()
+            filed_date = datetime.strptime(filed_date_text, "%Y-%m-%d")
 
-    # Find the latest date
-    latest_record = max(records, key=lambda x: x["date"])
-    print(f"Latest filing: {latest_record['text']} on {latest_record['date'].date()}")
-
-    # Scroll and click
-    driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", latest_record["element"])
-    time.sleep(1)
-    driver.execute_script("arguments[0].click();", latest_record["element"])
-    print(f"Clicked on latest filing: {latest_record['text']}")
+            if latest_date is None or filed_date > latest_date:
+                latest_date = filed_date
+                latest_row = row
+        except Exception as e:
+            continue
     
+    print(f"1.latest date --> {latest_date}")
+    print(f"2.latest row --> {latest_row}")
+    
+    if latest_row:
+        try:
+            # Get the link element inside "Form & File" column
+            link_element = latest_row.find_element(By.XPATH, ".//td[contains(@class,'filetype')]/a")
+            report_url = link_element.get_attribute("href")
+
+            print(f"Latest filing date: {latest_date.strftime('%Y-%m-%d')}")
+            print(f"Opening link: {report_url}")
+
+            # Scroll and click
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", link_element)
+            time.sleep(1)
+            link_element.click()
+        except Exception as e:
+            print(f" Failed to click the latest report link: {e}")
+    else:
+        print(" No valid filing rows found.")
+
+        
+
     print("Paused for Enter")
     input("Enter to continue...")
     
