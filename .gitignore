@@ -1,3 +1,4 @@
 .env
 read.txt
 venv
+results/

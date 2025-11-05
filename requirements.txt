@@ -2,3 +2,4 @@ selenium
 dotenv
 undetected_chromedriver
 setuptools
+bs4
